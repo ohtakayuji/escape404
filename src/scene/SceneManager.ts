@@ -99,7 +99,8 @@ export class SceneManager {
     this.renderer.info.autoReset = false;
 
     this.camera = new THREE.PerspectiveCamera(fov, 1, 0.05, 60);
-    this.scene.fog = new THREE.Fog(0x0a0f14, 11, 34);
+    // 空気の色。サイバー区画のネオンが霧に乗るよう、わずかに紫へ寄せる
+    this.scene.fog = new THREE.Fog(0x0a0d18, 11, 34);
 
     // 室内の間接光・金属の映り込み用の環境マップ
     this.pmrem = new THREE.PMREMGenerator(this.renderer);
@@ -110,6 +111,8 @@ export class SceneManager {
     this.scene.environmentIntensity = 0.28;
 
     this.lighting = new Lighting(this.environment.materials);
+    // ネオンのこぼれ光は光源が増えるので、ソフトウェア描画では発光面だけ残す
+    this.environment.neon.setSpillEnabled(this.quality === "high");
     this.scene.add(this.environment.group, this.glyph.group, this.lighting.group);
     this.camera.add(
       this.lighting.flashlight,
@@ -142,7 +145,12 @@ export class SceneManager {
       });
       this.composer.addPass(this.ao);
 
-      this.bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.32, 0.5, 0.95);
+      /*
+       * しきい値 0.95 は動かさない。P6 の背景パネルはこの下に収まる明るさで
+       * 作ってあり、上げると黒板の輪郭が滲んで錯視が崩れる。
+       * ネオン管はしきい値を越えるので、強さだけ上げれば管だけが光る。
+       */
+      this.bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.42, 0.56, 0.95);
       this.composer.addPass(this.bloom);
     }
     const vignette = new ShaderPass(VignetteShader);
@@ -208,6 +216,8 @@ export class SceneManager {
 
   setEmergencyLight(on: boolean): void {
     this.environment.parts.emergencyLight.intensity = on ? 15 : 0;
+    // 通路が開いた合図として、通路のネオンも同時に点ける
+    this.environment.neon.setPassageOn(on);
   }
 
   setExitGlow(value: number): void {
@@ -228,6 +238,7 @@ export class SceneManager {
     const showDust = input.motionEffects && this.quality === "high";
     if (showDust) this.lighting.update(input.dt);
     this.lighting.setDustVisible(showDust);
+    this.environment.neon.update(input.dt, input.motionEffects);
     return { hiddenTextVisible: this.updateHiddenText(input) };
   }
 

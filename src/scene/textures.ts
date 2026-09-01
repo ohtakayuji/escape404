@@ -413,6 +413,112 @@ export function plateTexture(
 }
 
 /** 生成済みテクスチャの一括破棄。 */
+/**
+ * ネオンの表示。Canvas の shadowBlur で本物の滲みを作るので、
+ * 発光マテリアルに載せるだけで管と同じ光り方になる。
+ * 和文が要るためフォントは mono ではなくゴシック系を使う。
+ */
+const GOTHIC =
+  '700 {size}px "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", "Meiryo", system-ui, sans-serif';
+
+export function neonSignTexture(text: string, color: string, fontSize = 96): THREE.CanvasTexture {
+  const padding = Math.round(fontSize * 0.55);
+  const [element, ctx] = canvas(1024, Math.round(fontSize * 1.9 + padding));
+  ctx.font = GOTHIC.replace("{size}", String(fontSize));
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  const x = element.width / 2;
+  const y = element.height / 2;
+
+  // 外側の滲み → 内側の芯、の順に重ねる
+  ctx.shadowColor = color;
+  ctx.fillStyle = color;
+  for (const blur of [fontSize * 0.9, fontSize * 0.45]) {
+    ctx.shadowBlur = blur;
+    ctx.fillText(text, x, y);
+  }
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = "#ffffff";
+  ctx.globalAlpha = 0.82;
+  ctx.fillText(text, x, y);
+  return toTexture(element);
+}
+
+/** 床に落ちる光の筋。長い平面に貼って管の映り込みにする。 */
+export function neonStreakTexture(): THREE.CanvasTexture {
+  const size = 256;
+  const [element, ctx] = canvas(size, size);
+  const gradient = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+  gradient.addColorStop(0, "rgba(255,255,255,0.92)");
+  gradient.addColorStop(0.18, "rgba(255,255,255,0.42)");
+  gradient.addColorStop(0.45, "rgba(255,255,255,0.14)");
+  gradient.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, size, size);
+  return toTexture(element);
+}
+
+/**
+ * 水たまりの形 (アルファマスク)。輪郭が円だと嘘に見えるので、
+ * 決まったオフセットの円を重ねて崩す (毎回同じ形にする)。
+ */
+export function puddleMaskTexture(): THREE.CanvasTexture {
+  const size = 256;
+  const [element, ctx] = canvas(size, size);
+  const blobs: [number, number, number][] = [
+    [0.5, 0.5, 0.34],
+    [0.36, 0.44, 0.2],
+    [0.64, 0.56, 0.22],
+    [0.46, 0.66, 0.16],
+    [0.58, 0.38, 0.14],
+    [0.3, 0.58, 0.1],
+  ];
+  for (const [cx, cy, radius] of blobs) {
+    const gradient = ctx.createRadialGradient(
+      cx * size,
+      cy * size,
+      radius * size * 0.35,
+      cx * size,
+      cy * size,
+      radius * size,
+    );
+    gradient.addColorStop(0, "rgba(255,255,255,0.95)");
+    gradient.addColorStop(0.7, "rgba(255,255,255,0.5)");
+    gradient.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, size, size);
+  }
+  return toTexture(element);
+}
+
+/** 機器の表示灯の列。点の並びで「動いている設備」に見せる。 */
+export function indicatorTexture(color: string, rows = 6, columns = 3): THREE.CanvasTexture {
+  const width = 128;
+  const height = 256;
+  const [element, ctx] = canvas(width, height);
+  ctx.fillStyle = "#05070a";
+  ctx.fillRect(0, 0, width, height);
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 12;
+  for (let row = 0; row < rows; row += 1) {
+    for (let column = 0; column < columns; column += 1) {
+      // 3 つに 1 つは消灯させ、規則的な点滅盤に見えないようにする
+      const lit = (row * columns + column) % 3 !== 1;
+      ctx.fillStyle = lit ? color : "#141a20";
+      ctx.beginPath();
+      ctx.arc(
+        ((column + 0.5) / columns) * width,
+        ((row + 0.5) / rows) * height,
+        width / (columns * 5),
+        0,
+        Math.PI * 2,
+      );
+      ctx.fill();
+    }
+  }
+  return toTexture(element);
+}
+
 export function disposeTextures(): void {
   for (const texture of created) texture.dispose();
   created.length = 0;

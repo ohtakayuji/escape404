@@ -11,6 +11,7 @@ import {
 } from "../data/layout";
 import { MaterialLibrary } from "./materials";
 import { MeshFactory } from "./MeshFactory";
+import { NeonZone } from "./NeonZone";
 import {
   buildBookshelf,
   buildCameras,
@@ -74,6 +75,8 @@ export class Environment {
   readonly group = new THREE.Group();
   readonly materials = new MaterialLibrary();
   readonly parts: EnvironmentParts;
+  /** サイバー区画 (隠し通路・機械室のネオンと主室の色被り) */
+  readonly neon: NeonZone;
   /** Raycast 対象にするオブジェクト (装飾は含めない) */
   readonly interactionMeshes: THREE.Object3D[] = [];
   /** 視線を遮る大物。壁越しの操作を防ぐために使う。 */
@@ -92,6 +95,9 @@ export class Environment {
 
     this.buildShell();
     this.buildInfrastructure();
+
+    this.neon = new NeonZone(this.context);
+    this.group.add(this.neon.group);
 
     const desk = buildMainDesk(this.context);
     const workstation = buildWorkstation(this.context);

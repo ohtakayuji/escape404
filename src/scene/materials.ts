@@ -32,7 +32,8 @@ export class MaterialLibrary {
   readonly floor = this.pbr(this.floorMaps, {
     color: 0xffffff,
     metalness: 0.03,
-    envMapIntensity: 0.5,
+    // 磨いた床に湿りを足す。上げすぎると白く霞むのでこの辺りが上限。
+    envMapIntensity: 0.8,
     normalScale: new THREE.Vector2(0.7, 0.7),
   });
   readonly floorHidden = this.pbr(cloneMaps(this.floorMaps, 1, 1.25), {
@@ -104,6 +105,11 @@ export class MaterialLibrary {
   readonly whiteEmissive = this.emissive(0xeaf4f6, 3.4);
   readonly panelEmissive = this.emissive(0xdbeaf2, 2.2);
   readonly warmEmissive = this.emissive(0xffd9a4, 1.4);
+  /**
+   * ネオン管の受け金具。管のすぐ横にあるため陰影を計算させると自分の光で
+   * 白く飛び、天井に光る板が張り付いたように見える。照明を受けない黒で置く。
+   */
+  readonly fixtureShell = this.basic({ color: 0x12181f });
   /** P6 の影絵。陰影を持たない黒。 */
   readonly silhouette = this.basic({ color: 0x03050a, fog: false });
   /**

@@ -57,6 +57,27 @@ Chromium の場所が標準でない環境では `PLAYWRIGHT_CHROMIUM_PATH` を�
 | レスポンシブ（タイトル・設定・モーダルはモバイルまで） | 済 |
 | クローラー全拒否 meta / robots.txt | 済 |
 
+## サイバー区画（見た目の設計）
+
+「無菌の観察室の裏に、稼働音のする配線街がある」という建付け。区画で性格を分け、
+主室の謎を読む照明には触れていない（判断は `docs/decisions.md` D-023）。
+
+| 区画 | 見た目 | 点灯 |
+|---|---|---|
+| 隠し部屋（機械室） | ネオン管 3 本・配電盤 3 台・配線・掲示「稼働中」「観測は継続する」 | 最初から（観察窓から見える＝通路を探す動機） |
+| 隠し通路 | 三方枠のネオン管 2 本・床の光の筋 | P5 クリアで点灯（開通の合図） |
+| 主室 | 天井のネオン管 2 本による色被り・北東の冷却盤・水たまり | 最初から |
+
+色は意味で決めている: magenta = 稼働中の負荷 / cyan = 冷却と配線 /
+violet = 通路の抜け。参考にした画像のような全色使いはしない。
+
+濡れた床は平面反射を使わず、(1) 管の像を加算合成の光の筋として床に置く
+(2) 水たまりを金属質の薄い膜として置き環境マップの艶を拾わせる
+(3) 床の `envMapIntensity` を上げる、の 3 点で作っている。
+
+データは `src/data/neon.ts`（位置・色・光量）、組み立ては `src/scene/NeonZone.ts`。
+管を 1 本足す・色を変えるだけならデータの編集で済む。
+
 ## 視点操作 (Pointer Lock) の扱い
 
 Pointer Lock はユーザー操作からしか要求できず、自動では取得できない
@@ -89,8 +110,8 @@ OS のマウスカーソルが残り、視点が動かない。そのため次�
 | トーンマッピング | ACES フィルミック (exposure 1.0) |
 | アンチエイリアス | MSAA 4x (EffectComposer のレンダーターゲット) |
 | 環境光・映り込み | PMREM + RoomEnvironment (environmentIntensity 0.28) |
-| ポストプロセス | GTAO (環境遮蔽) → UnrealBloom → Vignette → OutputPass |
-| 照明 | 天井埋め込み灯 = 面光源 4 灯 / 影付き SpotLight 1 灯 / 卓上ランプ / EXIT サイン / 非常灯 / 懐中電灯 (芯 + ハロの 2 灯) |
+| ポストプロセス | GTAO (環境遮蔽) → UnrealBloom (強さ 0.42 / しきい値 0.95) → Vignette → OutputPass |
+| 照明 | 天井埋め込み灯 = 面光源 4 灯 / 影付き SpotLight 1 灯 / 卓上ランプ / EXIT サイン / 非常灯 / 懐中電灯 (芯 + ハロの 2 灯) / ネオンのこぼれ光 5 灯 (低品質時は無効) |
 | マテリアル | albedo + normal + roughness を Canvas から生成 (高さマップから Sobel で法線) |
 | その他 | 埃の粒 (Points)、床の艶、フォグ |
 
@@ -105,8 +126,10 @@ src/
   app/GameApp.ts       各システムの組み立てとゲームループ
   app/Progression.ts   「謎が解けた」を世界の変化へ翻訳する層
   core/                EventBus / GameState / SaveManager / Settings / Input / tween / ids
-  data/                layout(寸法) / puzzles(答え・ヒント) / documents(文書) / dialogue(EVE)
+  data/                layout(寸法) / neon(サイバー区画) / puzzles(答え・ヒント)
+                       documents(文書) / dialogue(EVE)
   scene/               SceneManager (描画とポストプロセス) / Environment (躯体・設備)
+                       NeonZone (サイバー区画の管・掲示・濡れ床)
                        furniture (什器の造形) / MeshFactory / Lighting / Glyph404
                        pbr (手続き的 PBR マップ) / textures (文字・図版) / materials
   player/              PlayerController / CollisionWorld
@@ -151,6 +174,8 @@ e2e/                   Playwright（起動・通しプレイ・視覚確認）
   - 視点操作の開始（イントロ後・イントロ全視聴後・画面クリックでのスキップ・
     案内クリックでロック取得とカーソル消滅・モーダル開閉をまたいだ復帰）
 - 主要視点のスクリーンショットを目視確認（`test-results/*.png`。案内の表示も確認）
+- サイバー区画の追加後も、P6 の錯視（404 の読み）・額縁 4 枚の図版・壁パネルの
+  文字が変わらず読めることをスクリーンショットで確認
 
 未確認:
 - 実機 (Windows PC の Chrome) での視点操作の開始。headless Chromium では
