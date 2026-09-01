@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="only light" />
+    <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex, nocache" />
+    <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet, noimageindex" />
+    <title>ESCAPE 404 — THE LAST DEVELOPER</title>
+    <meta name="description" content="一人称視点の3D謎解き脱出ゲーム。NEXUS LAB B4から脱出する。" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20fill%3D%22%2305070a%22%2F%3E%3Ctext%20x%3D%2216%22%20y%3D%2221%22%20font-family%3D%22monospace%22%20font-size%3D%2213%22%20font-weight%3D%22700%22%20text-anchor%3D%22middle%22%20fill%3D%22%235fd3b2%22%3E404%3C%2Ftext%3E%3C%2Fsvg%3E" />
+    <link rel="stylesheet" href="./src/styles/main.css" />
+  </head>
+  <body>
+    <!-- 3D viewport -->
+    <canvas id="game-canvas" aria-label="ゲーム画面" role="img"></canvas>
+
+    <!-- 観察フレーム: プレイヤーが「観察されている」ことを示す常設の署名要素 -->
+    <div class="observation-frame" id="observation-frame" aria-hidden="true">
+      <span class="observation-frame__corner observation-frame__corner--tl"></span>
+      <span class="observation-frame__corner observation-frame__corner--tr"></span>
+      <span class="observation-frame__corner observation-frame__corner--bl"></span>
+      <span class="observation-frame__corner observation-frame__corner--br"></span>
+    </div>
+
+    <!-- 実行時に UIManager が中身を構築する -->
+    <div id="ui-root"></div>
+
+    <!-- タイトル画面 (JS 読み込み前から見えるよう静的に置く) -->
+    <main id="start-screen" class="screen screen--start" aria-label="タイトル画面">
+      <div class="start">
+        <p class="start__eyebrow">NEXUS LAB / B4 &nbsp;·&nbsp; SUBJECT EVALUATION</p>
+        <h1 class="start__title">
+          ESCAPE<span class="start__title-num">404</span>
+        </h1>
+        <p class="start__subtitle">THE LAST DEVELOPER</p>
+
+        <p class="start__lede">
+          深夜の AI 研究室で目を覚ます。出口は外からロックされ、室内の AI
+          <strong>EVE</strong> が脱出試験を始める。<br />
+          部屋に残された情報をつなぎ、<strong>7 つの謎</strong>を解いて脱出する。
+        </p>
+
+        <div class="start__actions">
+          <button type="button" id="btn-start" class="btn btn--primary">
+            <span class="btn__key">▶</span> はじめから
+          </button>
+          <button type="button" id="btn-continue" class="btn" disabled>
+            つづきから
+          </button>
+          <button type="button" id="btn-settings" class="btn btn--quiet">
+            設定
+          </button>
+        </div>
+
+        <dl class="controls" aria-label="操作方法">
+          <div class="controls__row"><dt>W A S D</dt><dd>移動</dd></div>
+          <div class="controls__row"><dt>Mouse</dt><dd>視点</dd></div>
+          <div class="controls__row"><dt>E</dt><dd>調べる</dd></div>
+          <div class="controls__row"><dt>F</dt><dd>アイテムを使う</dd></div>
+          <div class="controls__row"><dt>L</dt><dd>懐中電灯</dd></div>
+          <div class="controls__row"><dt>Tab</dt><dd>持ち物</dd></div>
+          <div class="controls__row"><dt>H</dt><dd>ヒント</dd></div>
+          <div class="controls__row"><dt>Esc</dt><dd>中断</dd></div>
+        </dl>
+
+        <p class="start__note">
+          PC ブラウザ（Chrome / Edge）推奨・プレイ時間 25〜40 分・進行は自動保存
+        </p>
+      </div>
+    </main>
+
+    <!-- 起動不能時のフォールバック -->
+    <div id="fatal-screen" class="screen screen--fatal" hidden>
+      <div class="fatal">
+        <p class="fatal__label">SYSTEM HALT</p>
+        <h2 class="fatal__title" id="fatal-title">起動できませんでした</h2>
+        <p class="fatal__body" id="fatal-body"></p>
+      </div>
+    </div>
+
+    <noscript>
+      <div class="screen screen--fatal">
+        <div class="fatal">
+          <p class="fatal__label">SYSTEM HALT</p>
+          <h2 class="fatal__title">JavaScript が無効です</h2>
+          <p class="fatal__body">
+            このゲームは 3D 描画に JavaScript と WebGL を使います。有効にして再読み込みしてください。
+          </p>
+        </div>
+      </div>
+    </noscript>
+
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>
