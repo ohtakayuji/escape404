@@ -17,7 +17,7 @@
 
 | 項目 | 値 |
 |---|---|
-| Framework preset | Vite |
+| Framework preset | **なし (None)**。Cloudflare のプリセット一覧に素の Vite は無い。`VitePress` は出力先が `.vitepress/dist` になるので選ばない |
 | Build command | `npm run build` |
 | Build output directory | `dist` |
 | Production branch | `main` |

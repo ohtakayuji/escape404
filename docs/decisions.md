@@ -126,7 +126,9 @@ paddlejam は「リポジトリのルートをそのまま配信ルートにす�
 配信ルートは Pages のビルド成果物 `dist` とする。この点だけ paddlejam と異なる。
 
 Pages のビルド設定（一次情報: https://developers.cloudflare.com/pages/get-started/git-integration/ ）:
-- Framework preset: Vite / Build command: `npm run build` / Build output directory: `dist`
+- Framework preset: **なし (None)** / Build command: `npm run build` / Build output directory: `dist`
+  （ダッシュボードのプリセット一覧に素の Vite は無い。VitePress は出力先が
+  `.vitepress/dist` になるため選ばない。プリセットは上記 2 項目を自動入力するだけの機能）
 - Production branch: `main`
 - Node バージョンは `.node-version` (22) で固定。ビルドイメージ v3 の既定は 22.16.0
   （一次情報: https://developers.cloudflare.com/pages/configuration/build-image/ ）
