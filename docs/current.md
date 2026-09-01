@@ -12,6 +12,14 @@
 - 外部アセットなし（テクスチャは Canvas で手続き生成、音は Web Audio 合成）
 - サーバー・DB・ネットワーク通信なし。進行は localStorage のみ
 
+## 公開 URL
+
+https://escape404.pages.dev
+
+Cloudflare Pages（Git 連携）で配信している。`main` への push で自動デプロイされる。
+ビルド設定は `CLAUDE.md` の「デプロイ」を参照（ビルドコマンドと出力ディレクトリを
+手動設定する。プリセットは「なし」）。
+
 ## 動かし方
 
 ```bash
