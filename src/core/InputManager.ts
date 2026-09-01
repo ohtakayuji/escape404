@@ -99,10 +99,37 @@ export class InputManager {
     return document.pointerLockElement === this.canvas;
   }
 
-  requestPointerLock(): void {
-    if (this.pointerLocked) return;
-    const result = this.canvas.requestPointerLock() as unknown;
-    if (result instanceof Promise) result.catch(() => this.events.emit("pointerlock:error", undefined));
+  /**
+   * ポインタロックを要求し、取得できたかどうかを返す。
+   * 呼び出し側は「取れなかったら案内を出す」判断のために結果を使う。
+   */
+  async requestPointerLock(): Promise<boolean> {
+    if (this.pointerLocked) return true;
+    try {
+      // Chrome 111+ は Promise を返す。旧仕様の環境はイベントでしか結果が分からない。
+      const result = this.canvas.requestPointerLock() as unknown;
+      if (result instanceof Promise) await result;
+      else await this.waitForLockSettled();
+    } catch {
+      this.events.emit("pointerlock:error", undefined);
+      return false;
+    }
+    return this.pointerLocked;
+  }
+
+  /** 旧仕様向け: 成否イベントか短いタイムアウトのどちらか早い方まで待つ。 */
+  private waitForLockSettled(): Promise<void> {
+    return new Promise((resolve) => {
+      const settle = () => {
+        window.clearTimeout(timer);
+        document.removeEventListener("pointerlockchange", settle);
+        document.removeEventListener("pointerlockerror", settle);
+        resolve();
+      };
+      const timer = window.setTimeout(settle, 400);
+      document.addEventListener("pointerlockchange", settle);
+      document.addEventListener("pointerlockerror", settle);
+    });
   }
 
   releasePointerLock(): void {

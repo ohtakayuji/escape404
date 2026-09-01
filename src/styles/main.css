@@ -1284,6 +1284,115 @@ body[data-scene="game"] .observation-frame {
 }
 
 /* =========================================================================
+   視点操作の案内
+   Pointer Lock はユーザー操作からしか要求できない。ロックが外れている間は
+   常設の案内を画面全体に出し、そこ自体をクリック対象にする。
+   3D 画面は透けさせ、「今どこにいるか」を見失わせない。
+   ========================================================================= */
+.look-prompt {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: var(--pad-screen);
+  margin: 0;
+  border: 0;
+  appearance: none;
+  color: var(--mist);
+  text-align: left;
+  cursor: pointer;
+  background:
+    radial-gradient(
+      120% 90% at 50% 50%,
+      color-mix(in srgb, var(--void) 42%, transparent) 0%,
+      color-mix(in srgb, var(--void) 84%, transparent) 100%
+    );
+}
+
+.look-prompt[hidden] {
+  display: none;
+}
+
+.look-prompt__card {
+  display: grid;
+  gap: 0.6rem;
+  width: min(34rem, 100%);
+  padding: clamp(1.1rem, 2.4vw, 1.9rem) clamp(1.2rem, 3vw, 2.1rem);
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--slate) 92%, transparent);
+  box-shadow: 0 26px 70px rgb(0 0 0 / 55%);
+}
+
+.look-prompt__eyebrow {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  color: var(--phos);
+}
+
+.look-prompt__title {
+  font-size: clamp(1.15rem, 2.4vw, 1.5rem);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.look-prompt__lede {
+  font-size: 0.9rem;
+  line-height: 1.65;
+  color: var(--mist-dim);
+}
+
+.look-prompt__keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  margin-top: 0.15rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--line-soft);
+}
+
+.look-prompt__key {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  font-size: 0.82rem;
+  color: var(--mist-dim);
+}
+
+.look-prompt__kbd {
+  padding: 0.1rem 0.4rem;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--void) 60%, var(--slate-2));
+  font-family: var(--mono);
+  font-size: 0.76rem;
+  letter-spacing: 0.06em;
+  color: var(--mist);
+}
+
+.look-prompt__hint {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  color: var(--mist-faint);
+}
+
+/* 署名要素と同じ「観測されている」トーンで、押せることだけを静かに示す */
+.look-prompt:hover .look-prompt__card,
+.look-prompt:focus-visible .look-prompt__card {
+  border-color: var(--phos-dim);
+  outline: none;
+}
+
+.look-prompt:focus-visible {
+  outline: none;
+}
+
+.look-prompt:focus-visible .look-prompt__title {
+  color: var(--phos);
+}
+
+/* =========================================================================
    イントロ / エンディング
    ========================================================================= */
 .cinematic {

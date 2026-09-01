@@ -28,7 +28,7 @@ npm install
 npm run dev        # http://localhost:5173
 npm run build      # tsc --noEmit + vite build
 npm test           # Vitest (49 件)
-npm run e2e        # Playwright (13 件、実ブラウザで通しプレイと視線操作)
+npm run e2e        # Playwright (18 件、実ブラウザで通しプレイ・視線操作・視点操作の開始)
 ```
 
 E2E は WebGL が必要なため headless Chromium を SwiftShader で起動する。
@@ -40,6 +40,7 @@ Chromium の場所が標準でない環境では `PLAYWRIGHT_CHROMIUM_PATH` を�
 | 仕様 | 状態 |
 |---|---|
 | FPS 移動 (WASD・マウス視点・Pointer Lock・AABB 衝突) | 済 |
+| 視点操作の開始案内 (ロックが外れている間は常設) | 済 |
 | Raycast + E 調査 / F アイテム使用 / L 懐中電灯 | 済 |
 | GameState 単一正・EventBus・localStorage 自動保存 | 済 |
 | P1 `0417` 引き出し | 済 |
@@ -55,6 +56,28 @@ Chromium の場所が標準でない環境では `PLAYWRIGHT_CHROMIUM_PATH` を�
 | WebGL 不可・localStorage 不可・セーブ破損の案内 | 済 |
 | レスポンシブ（タイトル・設定・モーダルはモバイルまで） | 済 |
 | クローラー全拒否 meta / robots.txt | 済 |
+
+## 視点操作 (Pointer Lock) の扱い
+
+Pointer Lock はユーザー操作からしか要求できず、自動では取得できない
+（一次情報: https://w3c.github.io/pointerlock/ ）。取れていない状態を放置すると
+OS のマウスカーソルが残り、視点が動かない。そのため次の建付けにしている。
+
+- ロックの要求は「ユーザー操作の流れの中」で行う
+  - イントロのスキップ操作（クリック / Enter / Space / Esc / スキップボタン）直後
+  - イントロを最後まで見た場合はその時点
+  - CONTINUE（つづきから）のクリック直後
+  - モーダルを閉じた直後（中断メニューの「ゲームに戻る」を含む）
+  - 画面のクリック、案内 (`.look-prompt`) のクリック
+- 取れなかった場合は常設の案内 `LookPrompt` を画面全体に出す。案内自体が
+  `<button>` なので、クリックでもキーボード (Enter / Space) でも開始できる。
+  消えるトーストでは気付かれないため、案内は取得できるまで出したままにする。
+- 案内を出す条件は `GameApp.canLook()` に集約している
+  （ゲーム中 / モーダルなし / 演出中でない / エンディングでない、かつ未ロック）。
+- ロック要求は同時に 1 つだけ通す。重ねると Chrome が先の要求を取り消し、
+  取得直後に外れて中断メニューが勝手に開く。
+- Esc でロックが外れたときは中断メニューを開く（Chrome では Esc の keydown が
+  ページに届かないため、解除イベントを中断の入口として使っている）。
 
 ## 描画
 
@@ -116,7 +139,7 @@ e2e/                   Playwright（起動・通しプレイ・視覚確認）
 - `npm run build` 成功。警告なし。app 436KB (gzip 160KB) + three 530KB (gzip 133KB)
 - Vitest 49 件パス（Puzzle 判定・依存ロック・冪等性・セーブ移行・当たり判定と
   到達可能性・P6 の錯視幾何）
-- Playwright 13 件パス
+- Playwright 18 件パス
   - 起動・描画・リサイズ (1920x1080 / 1440x900 / 1024x768)・壁抜けなし・
     console エラー 0・アセット 404 なし
   - START から END B までの通しプレイ（キーパッド UI のクリック、懐中電灯での
@@ -125,9 +148,14 @@ e2e/                   Playwright（起動・通しプレイ・視覚確認）
   - 視線を合わせて E・F で操作する経路（引き出し・社員カード・メモ・時計・絵画・
     PC・金庫・本・EXIT DOOR・キーパッド・端末・X 印・台座・形状サンプル）
   - 壁や什器の向こう側は操作できないこと（遮蔽判定）
-- 主要視点のスクリーンショットを目視確認（`test-results/*.png`）
+  - 視点操作の開始（イントロ後・イントロ全視聴後・画面クリックでのスキップ・
+    案内クリックでロック取得とカーソル消滅・モーダル開閉をまたいだ復帰）
+- 主要視点のスクリーンショットを目視確認（`test-results/*.png`。案内の表示も確認）
 
 未確認:
+- 実機 (Windows PC の Chrome) での視点操作の開始。headless Chromium では
+  イントロ後にロックを取得できたが、実機で拒否された場合に案内が出る経路は
+  ブラウザ実行を伴うため未確認
 - 実機 GPU での fps（headless SwiftShader では 1〜2fps。実 GPU 環境での計測は未実施）
 - Firefox / Safari での動作
 - 実プレイヤー 3 人によるテストプレイ（仕様書 11 の Playtest 項目）

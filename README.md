@@ -16,7 +16,7 @@ npm run dev      # http://localhost:5173
 | `npm run dev` | 開発サーバー |
 | `npm run build` | 型チェック + 本番ビルド |
 | `npm test` | Vitest 49 件（Puzzle 判定・セーブ・当たり判定・P6 の幾何） |
-| `npm run e2e` | Playwright 13 件（起動・通しプレイ・視線操作・スクリーンショット） |
+| `npm run e2e` | Playwright 18 件（起動・通しプレイ・視線操作・視点操作の開始・スクリーンショット） |
 
 操作: `WASD` 移動 / マウス 視点 / `E` 調べる / `F` アイテム使用 /
 `L` 懐中電灯 / `Tab` 持ち物 / `H` ヒント / `Esc` 中断

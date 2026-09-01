@@ -34,7 +34,7 @@ export class Cinematic {
     return !this.root.hidden;
   }
 
-  /** 1 文字ずつ表示。クリック / キー / ボタンでスキップできる。 */
+  /** 1 文字ずつ表示。クリック / キー (Enter・Space・Esc) / ボタンでスキップできる。 */
   playIntro(lines: string[], onDone: () => void): void {
     const text = el("p", { class: "cinematic__text" });
     const caret = el("span", { class: "cinematic__caret", text: "▌" });
@@ -50,7 +50,11 @@ export class Cinematic {
 
     const full = lines.join("\n");
     let index = 0;
+    let finished = false;
+    // スキップ操作は複数ある (クリック / キー / ボタン)。二重発火を防ぐ。
     const finish = () => {
+      if (finished) return;
+      finished = true;
       this.stop();
       onDone();
     };
@@ -72,9 +76,13 @@ export class Cinematic {
       finish();
     };
     skip.addEventListener("click", finish);
+    // 画面のどこをクリックしてもスキップできる。ここでのクリックは
+    // 直後のポインタロック要求に必要なユーザー操作にもなる。
+    this.root.addEventListener("click", finish);
     window.addEventListener("keydown", onKey);
     this.cleanup = () => {
       window.removeEventListener("keydown", onKey);
+      this.root.removeEventListener("click", finish);
     };
 
     this.timer = window.setTimeout(step, 500);

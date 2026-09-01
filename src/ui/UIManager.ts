@@ -26,6 +26,7 @@ import { PcPanel } from "./PcPanel";
 import { createShapePanel } from "./ShapePanel";
 import { TextEntryPanel } from "./TextEntryPanel";
 import { Hud } from "./Hud";
+import { LookPrompt } from "./LookPrompt";
 import { el } from "./dom";
 
 export interface UIManagerDeps {
@@ -38,6 +39,8 @@ export interface UIManagerDeps {
   getSettings: () => Settings;
   onSettingsChange: (patch: Partial<Settings>) => void;
   onModalChange: (open: boolean) => void;
+  /** 「クリックして視点操作」の案内が押された */
+  onRequestLook: () => void;
   onReset: () => void;
   onTitle: () => void;
   onRestart: () => void;}
@@ -50,9 +53,11 @@ export class UIManager implements UIFacade {
   readonly hud: Hud;
   readonly cinematic: Cinematic;
   private readonly modal: ModalHost;
+  private readonly lookPrompt: LookPrompt;
 
   constructor(private readonly deps: UIManagerDeps) {
     this.hud = new Hud(deps.root, PUZZLES.length);
+    this.lookPrompt = new LookPrompt(deps.root, () => deps.onRequestLook());
     this.modal = new ModalHost(deps.root);
     this.cinematic = new Cinematic(deps.root);
   }
@@ -69,9 +74,19 @@ export class UIManager implements UIFacade {
     return this.modal.currentId;
   }
 
+  /** 視点操作の案内を出す / 消す。出すかどうかの判断は GameApp が持つ。 */
+  setLookPromptVisible(visible: boolean): void {
+    this.lookPrompt.setVisible(visible);
+  }
+
+  get isLookPromptVisible(): boolean {
+    return this.lookPrompt.visible;
+  }
+
   closeModal(): void {
+    // 通知は ModalHost の onClose 経由に一本化する。ここで重ねて呼ぶと
+    // 「閉じた」が 2 回流れ、ポインタロックの要求が二重になる。
     this.modal.close();
-    this.deps.onModalChange(false);
   }
 
   toast(text: string, tone: "info" | "warn" = "info"): void {

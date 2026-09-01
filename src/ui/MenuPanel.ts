@@ -24,7 +24,7 @@ export function createPauseMenu(options: PauseMenuOptions): HTMLElement {
     button("最初からやり直す (RESET)", options.onReset, "btn btn--danger"),
     el("p", {
       class: "hints__note",
-      text: "画面をクリックすると視点操作に戻る (ブラウザの制約で自動復帰はできない)。",
+      text: "「ゲームに戻る」を押すと視点操作も再開する。戻らないときは画面をクリックする。",
     }),
   ]);
 }

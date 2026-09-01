@@ -39,6 +39,7 @@ export interface TestApi {
   setFlashlight(on: boolean): void;
   flashlightOn(): boolean;
   modalId(): string | null;
+  lookPromptVisible(): boolean;
   renderStats(): { triangles: number; calls: number; frame: number };
 }
 

@@ -52,6 +52,10 @@ export class GameApp {
 
   private currentScene: Scene = "title";
   private flashlightOn = false;
+  /** 一度でもポインタロックを取得できたか (取れない環境の判定に使う) */
+  private lockEverAcquired = false;
+  private lockErrorNotified = false;
+  private lockRequestPending = false;
   private lastFrame = 0;
   private sinceSave = 0;
   private rafHandle = 0;
@@ -91,6 +95,7 @@ export class GameApp {
       getSettings: () => this.settings,
       onSettingsChange: (patch) => this.updateSettings(patch),
       onModalChange: (open) => this.handleModalChange(open),
+      onRequestLook: () => void this.tryPointerLock(),
       onReset: () => this.resetAndReload(),
       onTitle: () => this.returnToTitle(),
       onRestart: () => this.resetAndReload(),
@@ -144,7 +149,9 @@ export class GameApp {
     this.enterGame();
     this.ui.cinematic.playIntro(INTRO_LINES, () => {
       this.ui.speak(EVE.boot!);
-      this.ui.toast("画面をクリックすると視点操作を始められる");
+      // スキップ操作 (クリック / キー) の直後ならここでロックが取れる。
+      // 取れなければ案内を出す。
+      void this.tryPointerLock();
       this.animator.after(7, () => {
         if (this.state.solvedPuzzles.length === 0) this.ui.speak(EVE.firstLook!);
       });
@@ -160,6 +167,7 @@ export class GameApp {
       this.enterGame();
       this.progression.syncFromState();
       this.ui.toast("進行を復元した");
+      void this.tryPointerLock();
       return;
     }
     if (result.status === "corrupt") {
@@ -190,6 +198,7 @@ export class GameApp {
     this.input.attach();
     this.input.movementEnabled = true;
     this.setFlashlight(false);
+    this.syncLookPrompt();
   }
 
   private returnToTitle(): void {
@@ -206,6 +215,7 @@ export class GameApp {
     this.input.releasePointerLock();
     this.input.movementEnabled = false;
     this.ui.showEnding(ending);
+    this.syncLookPrompt();
   }
 
   /**
@@ -248,20 +258,23 @@ export class GameApp {
     this.input.events.on("action", (action) => this.handleAction(action));
     this.input.events.on("pointerlock:change", (locked) => {
       document.body.dataset["pointerLocked"] = String(locked);
+      if (locked) this.lockEverAcquired = true;
       if (!locked && this.currentScene === "game" && !this.ui.isModalOpen && !this.state.ending) {
         this.ui.openPause();
       }
+      this.syncLookPrompt();
     });
     this.input.events.on("pointerlock:error", () => {
-      this.ui.toast("この環境ではマウス視点固定が使えない", "warn");
+      // Chrome は Esc 解除の直後しばらく再取得を拒む。取得実績があるなら
+      // 環境の非対応ではないので、警告ではなく案内の再表示だけにする。
+      if (!this.lockEverAcquired && !this.lockErrorNotified) {
+        this.lockErrorNotified = true;
+        this.ui.toast("この環境ではマウス視点固定が使えない", "warn");
+      }
+      this.syncLookPrompt();
     });
 
-    this.canvas.addEventListener("click", () => {
-      if (this.currentScene !== "game") return;
-      if (this.ui.isModalOpen || this.ui.cinematic.isPlaying) return;
-      this.audio.unlock();
-      this.input.requestPointerLock();
-    });
+    this.canvas.addEventListener("click", () => void this.tryPointerLock());
 
     document.addEventListener("visibilitychange", () => {
       if (document.hidden && this.currentScene === "game") this.persist();
@@ -326,7 +339,50 @@ export class GameApp {
 
   private handleModalChange(open: boolean): void {
     this.input.movementEnabled = !open;
-    if (open) this.input.releasePointerLock();
+    if (open) {
+      this.input.releasePointerLock();
+      this.syncLookPrompt();
+      return;
+    }
+    // 閉じた操作 (クリック / Esc) の流れでロックを取り直す。
+    // 取れなければ案内が出るので、マウスが効かないまま放置されない。
+    void this.tryPointerLock();
+  }
+
+  /**
+   * ポインタロックを要求する。Pointer Lock はユーザー操作からしか取得できず
+   * 自動では取れないため、失敗したら案内 (LookPrompt) を出して次の操作を待つ。
+   */
+  private async tryPointerLock(): Promise<void> {
+    // 要求が重なると Chrome が先の要求を取り消してロックが外れる。1 つずつ通す。
+    if (this.lockRequestPending) return;
+    if (!this.canLook()) {
+      this.syncLookPrompt();
+      return;
+    }
+    this.audio.unlock();
+    this.lockRequestPending = true;
+    try {
+      const locked = await this.input.requestPointerLock();
+      if (locked) this.lockEverAcquired = true;
+    } finally {
+      this.lockRequestPending = false;
+    }
+    this.syncLookPrompt();
+  }
+
+  /** 視点操作をしていて良い場面か (モーダル・演出・エンディング中は違う) */
+  private canLook(): boolean {
+    return (
+      this.currentScene === "game" &&
+      !this.ui.isModalOpen &&
+      !this.ui.cinematic.isPlaying &&
+      this.state.ending === null
+    );
+  }
+
+  private syncLookPrompt(): void {
+    this.ui.setLookPromptVisible(this.canLook() && !this.input.pointerLocked);
   }
 
   private context(): GameContext {
@@ -491,6 +547,8 @@ export class GameApp {
       setFlashlight: (on: boolean) => this.setFlashlight(on),
       flashlightOn: () => this.flashlightOn,
       modalId: () => this.ui.modalId,
+      /** 視点操作の案内が出ているか */
+      lookPromptVisible: () => this.ui.isLookPromptVisible,
       renderStats: () => ({
         triangles: this.scene.renderer.info.render.triangles,
         calls: this.scene.renderer.info.render.calls,
